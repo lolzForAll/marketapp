@@ -14,12 +14,12 @@ yourself.
    in a listing.
 2. **Upload photos** — drop in one or more photos of an item to create it.
 3. **Run price search** — calls [SerpApi](https://serpapi.com)'s Google Lens
-   reverse image search on a photo and shows the visually similar listings it
-   found.
-4. **Pick the match** — choose which (if any) of those results is actually
-   your item. If none match, try again with another photo of the same item;
-   if it's not the kind of thing a search will ever find (a generic used
-   towel, say), skip straight to manual entry.
+   reverse image search once per photo of the item and pools the results into
+   one list (more photos means more SerpApi calls/cost per item, but a better
+   chance of finding the right match).
+4. **Pick the match** — choose which (if any) of the pooled results is
+   actually your item. If it's not the kind of thing a search will ever find
+   (a generic used towel, say), skip straight to manual entry.
 5. **Condition &amp; dimensions** — set the item's condition, and optionally
    type in dimensions if they're not already on the matched product's page.
 6. **Generate listing &amp; price** — one call to OpenAI (`gpt-4o-mini` by

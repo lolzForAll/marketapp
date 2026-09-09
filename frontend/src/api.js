@@ -45,8 +45,7 @@ export const api = {
       body: JSON.stringify(data),
     }),
   deleteItem: (id) => request(`/items/${id}`, { method: "DELETE" }),
-  analyzeItem: (id, photoIndex = 0) =>
-    request(`/items/${id}/analyze?photo_index=${photoIndex}`, { method: "POST" }),
+  analyzeItem: (id) => request(`/items/${id}/analyze`, { method: "POST" }),
   selectMatch: (id, payload) =>
     request(`/items/${id}/select-match`, {
       method: "POST",

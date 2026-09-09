@@ -17,7 +17,6 @@ export default function ItemDetailPage() {
   const [form, setForm] = useState(null);
   const [error, setError] = useState(null);
   const [busy, setBusy] = useState(null); // which action is in flight
-  const [nextPhotoIndex, setNextPhotoIndex] = useState(0);
   const photoInputRef = useRef(null);
 
   const load = () =>
@@ -85,13 +84,7 @@ export default function ItemDetailPage() {
     navigate("/");
   };
 
-  const runSearch = () =>
-    run("analyze", () => api.analyzeItem(id, 0)).then(() => setNextPhotoIndex(1));
-
-  const tryAnotherPhoto = () =>
-    run("analyze", () => api.analyzeItem(id, nextPhotoIndex)).then(() =>
-      setNextPhotoIndex((n) => n + 1)
-    );
+  const runSearch = () => run("analyze", () => api.analyzeItem(id));
 
   const pickComp = (compId) => run("match", () => api.selectMatch(id, { comp_id: compId }));
   const skipToManual = () => run("match", () => api.selectMatch(id, { skip: true }));
@@ -115,8 +108,6 @@ export default function ItemDetailPage() {
         price_final: updated.price_final ?? "",
       }));
     });
-
-  const hasMorePhotosToTry = nextPhotoIndex < item.photos.length;
 
   return (
     <div>
@@ -148,9 +139,11 @@ export default function ItemDetailPage() {
       <div className="card" style={{ marginTop: 16 }}>
         <h3 style={{ marginTop: 0 }}>1. Find the matching product</h3>
         <p className="help-text">
-          Reverse image search (SerpApi / Google Lens) on your photos. Requires
-          SERPAPI_API_KEY and PUBLIC_BASE_URL configured on the backend — see the
-          README.
+          Reverse image search (SerpApi / Google Lens) run on every photo of this
+          item and pooled into one list — more photos means more SerpApi calls
+          (and cost) per item, but a better chance of finding the right match.
+          Requires SERPAPI_API_KEY and PUBLIC_BASE_URL configured on the backend
+          — see the README.
         </p>
 
         {item.match_status === "unmatched" && item.comps.length === 0 && (
@@ -183,16 +176,11 @@ export default function ItemDetailPage() {
               ))}
             </ul>
             <div className="btn-row">
-              <button
-                className="secondary"
-                onClick={tryAnotherPhoto}
-                disabled={busy === "analyze" || !hasMorePhotosToTry}
-                title={!hasMorePhotosToTry ? "No more photos to try" : ""}
-              >
-                None of these match — try another photo
+              <button className="secondary" onClick={runSearch} disabled={busy === "analyze"}>
+                {busy === "analyze" ? "Searching..." : "Search again (e.g. after adding photos)"}
               </button>
               <button className="secondary" onClick={skipToManual} disabled={busy === "match"}>
-                Not in search options — I'll enter it manually
+                None of these match — I'll enter it manually
               </button>
             </div>
           </>

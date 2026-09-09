@@ -1,6 +1,6 @@
 import datetime
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 
 from .. import models, schemas
@@ -15,19 +15,12 @@ router = APIRouter(prefix="/api/items", tags=["pricing"])
 
 
 @router.post("/{item_id}/analyze", response_model=schemas.ItemOut)
-def analyze_item(
-    item_id: int,
-    request: Request,
-    photo_index: int = Query(0, ge=0),
-    db: Session = Depends(get_db),
-):
+def analyze_item(item_id: int, request: Request, db: Session = Depends(get_db)):
     item = db.get(models.Item, item_id)
     if not item:
         raise HTTPException(404, "Item not found")
     if not item.photos:
         raise HTTPException(400, "Add at least one photo before analyzing")
-    if photo_index >= len(item.photos):
-        raise HTTPException(400, "No more photos to try")
 
     if not PUBLIC_BASE_URL:
         raise HTTPException(
@@ -38,21 +31,36 @@ def analyze_item(
             "gives you). See the README for details.",
         )
 
-    photo = item.photos[photo_index]
-    image_url = f"{PUBLIC_BASE_URL}/uploads/{item.id}/{photo.filename}"
+    # Search every photo of the item and pool the results - a match might
+    # only surface from one particular angle. Each photo is a separate
+    # SerpApi call (and cost), so this runs once per "Run price search" click.
+    pooled: list[pricing_engine.Comp] = []
+    seen_links: set[str] = set()
+    last_error: SerpApiError | None = None
 
-    try:
-        raw = reverse_image_search(image_url)
-    except SerpApiError as exc:
-        raise HTTPException(502, str(exc)) from exc
+    for photo in item.photos:
+        image_url = f"{PUBLIC_BASE_URL}/uploads/{item.id}/{photo.filename}"
+        try:
+            raw = reverse_image_search(image_url)
+        except SerpApiError as exc:
+            last_error = exc
+            continue
+        for comp in pricing_engine.extract_comps(raw):
+            key = comp.link or comp.title
+            if key and key in seen_links:
+                continue
+            if key:
+                seen_links.add(key)
+            pooled.append(comp)
 
-    comps = pricing_engine.extract_comps(raw)
+    if not pooled and last_error is not None:
+        raise HTTPException(502, str(last_error))
 
     # Replace any previous comps for this item, and since they're gone,
     # any earlier match selection pointing at them is no longer valid.
     for comp in list(item.comps):
         db.delete(comp)
-    for comp in comps:
+    for comp in pooled:
         db.add(
             models.PriceComp(
                 item_id=item.id,
