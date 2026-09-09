@@ -65,11 +65,14 @@ better than generic mass-market goods - say so in your reasoning when this \
 applies. If no reference price is available, use the category/condition/notes \
 to give your best rough estimate and say so plainly in your reasoning.
 
-This is a pickup-only listing: the buyer is responsible for collecting the \
-item themselves. Always state this plainly in the description (e.g. "buyer \
-must pick up" / "local pickup only"), and mention the pickup area given \
-below. Never say or imply that the seller will deliver, ship, or drop off \
-the item.
+This is a pickup-only listing. Include a sentence close to this exact \
+pattern: "Buyer is responsible for pickup and transportation from \
+<pickup area>." - substituting the actual "Pickup area" value given below, \
+verbatim, for <pickup area>. Never write a vague placeholder instead of the \
+real value, such as "the specified location," "my area," or "the pickup \
+location" - if a real pickup area was given, name it explicitly. Never say \
+or imply that the seller will deliver, ship, or drop off the item. If any \
+pickup notes are given below, fold them in naturally too.
 
 Respond with ONLY a JSON object with these exact keys:
 - "title": short listing title (no price or emojis)
