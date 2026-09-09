@@ -1,0 +1,18 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+.env
+
+# backend runtime data
+backend/app/static/uploads/*
+!backend/app/static/uploads/.gitkeep
+backend/marketapp.db
+backend/.browser_profile/
+
+# frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+.DS_Store
