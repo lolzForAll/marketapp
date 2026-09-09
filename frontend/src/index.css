@@ -254,10 +254,22 @@ button:disabled {
   border-bottom: 1px solid var(--border);
 }
 
-.comp-list li a {
-  color: var(--text);
+.comp-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
   flex: 1;
   margin-right: 12px;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.comp-link:hover .comp-title {
+  text-decoration: underline;
+}
+
+.comp-title {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
