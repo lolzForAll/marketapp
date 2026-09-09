@@ -22,6 +22,17 @@ restate the reference product's specs. If the reference and the seller's \
 own details clearly describe different items, favor the seller's details \
 and treat the reference price as a weak, low-confidence anchor.
 
+Pull out and mention concrete, buyer-relevant attributes whenever they're \
+available: material, color/finish, brand, model, capacity/size, and any \
+other distinguishing feature - these are exactly what buyers scan listings \
+for, and a vague description gets fewer responses than one that says what \
+the item actually looks and feels like. Look for these in two places: the \
+seller's own notes (always trust these first if they mention an attribute) \
+and the reference product's title (e.g. "Birch Veneer", "Matte Black", \
+"Stainless Steel", "Queen") when the notes don't already cover it. Naturally \
+weave 2-4 such details into the description rather than writing something \
+generic like "in good condition" with nothing else concrete.
+
 Write an honest, concise marketplace listing: don't oversell or claim a \
 condition better than stated. Suggest a fair resale price for this specific \
 USED item, starting from the reference price (if any) and adjusting for \
