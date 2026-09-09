@@ -97,6 +97,34 @@ npm run dev
 Open the URL Vite prints (default `http://127.0.0.1:5173`). It proxies
 `/api` and `/uploads` to the backend on port 8000.
 
+### Running under WSL (Windows)
+
+The app runs fine in WSL2 — FastAPI, SQLite, Node, and Playwright's Chromium
+are all normal Linux binaries. A few WSL-specific things to know:
+
+- **`pip install` failing with `linker `cc` not found` or a `pydantic-core`/
+  `greenlet` build error**: this means your WSL's default `python3` is newer
+  than what the pinned dependency versions have pre-built wheels for, so pip
+  tries to compile them from source (Rust for `pydantic-core`, C for
+  `greenlet`) and there's no compiler installed. `requirements.txt` uses
+  `>=` version bounds specifically so pip can pick a newer release with
+  wheels available — if you still hit this, either run
+  `pip install --upgrade pip` first (older pip resolves versions worse), or
+  create the venv with an older Python you have installed, e.g.
+  `python3.12 -m venv .venv` instead of `python3 -m venv .venv`.
+- **Clone the repo inside WSL's own filesystem** (e.g. `~/marketapp`), not
+  under `/mnt/c/...`. Crossing the Windows/WSL filesystem boundary makes
+  `npm install` and Vite's file-watching noticeably slower and occasionally
+  flaky.
+- **Reaching the app from your phone** needs one extra step beyond
+  `--host 0.0.0.0` — see [Access from other devices on your
+  WiFi](#access-from-other-devices-on-your-wifi) below, WSL2 has its own
+  virtual network separate from Windows' real network adapter.
+- **The publish-assist browser window** needs GUI passthrough (WSLg) to
+  display on your Windows desktop. This ships by default on Windows 11; on
+  Windows 10 check `wsl --update` or use a third-party X server if it's not
+  available.
+
 ## Access from other devices on your WiFi
 
 Both dev servers are configured to listen on all network interfaces
@@ -122,6 +150,32 @@ snapping a photo on your phone and uploading it straight into the app.
 If it doesn't connect, your machine's firewall may be blocking incoming
 connections on ports `5173`/`8000` — allow them for your local network, or
 temporarily disable the firewall to confirm that's the issue.
+
+**Running this from WSL on Windows:** `--host 0.0.0.0` and `host: true`
+alone are not enough — WSL2 has its own virtual network, separate from
+Windows' real network adapter, so your phone can't reach it directly by
+default.
+
+- Easiest fix (Windows 11 / recent WSL): enable "mirrored" networking mode,
+  which makes WSL share the host's network directly. Create
+  `%UserProfile%\.wslconfig` with:
+  ```
+  [wsl2]
+  networkingMode=mirrored
+  ```
+  then run `wsl --shutdown` and restart WSL. After that, use your Windows
+  machine's normal LAN IP from `ipconfig`, same as any other setup.
+- If mirrored mode isn't available, forward the ports from Windows to WSL's
+  internal IP instead. From an **admin PowerShell**:
+  ```powershell
+  $wslIp = wsl hostname -I
+  netsh interface portproxy add v4tov4 listenport=8000 listenaddress=0.0.0.0 connectport=8000 connectaddress=$wslIp
+  netsh interface portproxy add v4tov4 listenport=5173 listenaddress=0.0.0.0 connectport=5173 connectaddress=$wslIp
+  New-NetFirewallRule -DisplayName "MarketApp" -Direction Inbound -Protocol TCP -LocalPort 8000,5173 -Action Allow
+  ```
+  Your phone then hits the **Windows** machine's LAN IP, not any
+  WSL-internal address. `$wslIp` changes on every WSL restart, so you'll
+  need to re-run this after reboots unless you switch to mirrored mode.
 
 **Security note:** this makes the app reachable by *any* device on that
 WiFi network, with no login of any kind. That's normally fine on a home
