@@ -13,6 +13,9 @@ DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite:///{BASE_DIR.parent / 'marketa
 
 SERPAPI_API_KEY = os.getenv("SERPAPI_API_KEY", "")
 
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
+OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+
 # Must be a publicly reachable base URL (e.g. an ngrok/cloudflared tunnel, or your
 # deployment's real domain) so SerpApi's servers can fetch uploaded photos for
 # reverse image search. Example: https://abcd1234.ngrok-free.app

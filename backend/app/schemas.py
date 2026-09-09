@@ -43,8 +43,12 @@ class ItemOut(BaseModel):
     description: str
     category: str
     condition: str
+    dimensions: str
     price_suggested: float | None
     price_final: float | None
+    ai_price_reasoning: str
+    match_status: str
+    selected_comp_id: int | None
     status: str
     notes: str
     created_at: datetime.datetime
@@ -61,5 +65,12 @@ class ItemUpdate(BaseModel):
     description: str | None = None
     category: str | None = None
     condition: str | None = None
+    dimensions: str | None = None
     price_final: float | None = None
     notes: str | None = None
+
+
+class SelectMatchIn(BaseModel):
+    comp_id: int | None = None
+    skip: bool = False
+    reset: bool = False

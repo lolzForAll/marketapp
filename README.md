@@ -14,17 +14,30 @@ yourself.
    in a listing.
 2. **Upload photos** — drop in one or more photos of an item to create it.
 3. **Run price search** — calls [SerpApi](https://serpapi.com)'s Google Lens
-   reverse image search on the first photo, collects comparable listings,
-   and suggests a price (median of the comps, with outliers trimmed) plus a
-   draft title/description/category. You can edit any of it.
-4. **Approve** — set a final price you're happy with and approve the item.
-5. **Publish-assist** — opens a real, visible Chrome window on your machine
+   reverse image search on a photo and shows the visually similar listings it
+   found.
+4. **Pick the match** — choose which (if any) of those results is actually
+   your item. If none match, try again with another photo of the same item;
+   if it's not the kind of thing a search will ever find (a generic used
+   towel, say), skip straight to manual entry.
+5. **Condition &amp; dimensions** — set the item's condition, and optionally
+   type in dimensions if they're not already on the matched product's page.
+6. **Generate listing &amp; price** — one call to OpenAI (`gpt-4o-mini` by
+   default) writes the title/description and proposes a price, reasoning
+   from the matched product's price (or your own notes, in the manual path)
+   discounted for condition. You can edit anything it produces, including
+   the final price, before approving.
+7. **Approve** — lock in the final price you're happy with.
+8. **Publish-assist** — opens a real, visible Chrome window on your machine
    (using a persistent profile so you only log into Facebook once) and
    pre-fills the Marketplace "create listing" form: photos, title, price,
    description, location. **It never clicks Publish.** You review the
    listing yourself in that window and publish it by hand.
-6. Mark the item "posted" in the app once you've published it, so your item
+9. Mark the item "posted" in the app once you've published it, so your item
    list stays an accurate to-do list of what's left.
+
+Needs both `SERPAPI_API_KEY` (image search) and `OPENAI_API_KEY` (listing
+generation) configured — see `backend/.env.example`.
 
 ## Important: read this before using the publish-assist feature
 
@@ -193,6 +206,10 @@ when you're not actively using this on a network you don't fully trust.
 - The publish-assist browser window runs **on the machine running the
   backend**, not in a hosted/headless environment — it's meant to be run
   locally.
-- The price suggestion is a heuristic based on a handful of visually similar
-  listings; always sanity-check it against the comps shown in the UI before
+- The price suggestion comes from GPT reasoning over the specific product you
+  selected (or your own manual notes); always sanity-check it before
   approving.
+- There's no migration system — if you're updating an existing checkout and
+  hit a database error after pulling changes, delete `backend/marketapp.db`
+  and let it get recreated (you'll lose existing items/seller profile, so
+  re-enter your seller profile once after).

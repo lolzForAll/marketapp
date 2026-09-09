@@ -45,7 +45,15 @@ export const api = {
       body: JSON.stringify(data),
     }),
   deleteItem: (id) => request(`/items/${id}`, { method: "DELETE" }),
-  analyzeItem: (id) => request(`/items/${id}/analyze`, { method: "POST" }),
+  analyzeItem: (id, photoIndex = 0) =>
+    request(`/items/${id}/analyze?photo_index=${photoIndex}`, { method: "POST" }),
+  selectMatch: (id, payload) =>
+    request(`/items/${id}/select-match`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    }),
+  generateListing: (id) => request(`/items/${id}/generate-listing`, { method: "POST" }),
   approveItem: (id) => request(`/items/${id}/approve`, { method: "POST" }),
   publishAssist: (id) => request(`/items/${id}/publish-assist`, { method: "POST" }),
   markPublished: (id) => request(`/items/${id}/mark-published`, { method: "POST" }),

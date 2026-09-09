@@ -12,6 +12,12 @@ STATUS_APPROVED = "approved"
 STATUS_PUBLISH_STARTED = "publish_started"
 STATUS_POSTED = "posted"
 
+# Product-match sub-state, tracked separately from the lifecycle status above:
+# unmatched -> (matched | manual), reset back to unmatched if search re-runs.
+MATCH_UNMATCHED = "unmatched"
+MATCH_MATCHED = "matched"
+MATCH_MANUAL = "manual"
+
 
 class SellerProfile(Base):
     """Singleton row (id=1) holding the seller's own details."""
@@ -44,8 +50,16 @@ class Item(Base):
     category: Mapped[str] = mapped_column(String(100), default="")
     condition: Mapped[str] = mapped_column(String(50), default="good")
 
+    dimensions: Mapped[str] = mapped_column(String(200), default="")
+
     price_suggested: Mapped[float | None] = mapped_column(Float, nullable=True)
     price_final: Mapped[float | None] = mapped_column(Float, nullable=True)
+    ai_price_reasoning: Mapped[str] = mapped_column(Text, default="")
+
+    match_status: Mapped[str] = mapped_column(String(20), default=MATCH_UNMATCHED)
+    selected_comp_id: Mapped[int | None] = mapped_column(
+        ForeignKey("price_comps.id"), nullable=True
+    )
 
     status: Mapped[str] = mapped_column(String(30), default=STATUS_DRAFT)
     notes: Mapped[str] = mapped_column(Text, default="")
@@ -64,7 +78,9 @@ class Item(Base):
         back_populates="item", cascade="all, delete-orphan", order_by="ItemPhoto.position"
     )
     comps: Mapped[list["PriceComp"]] = relationship(
-        back_populates="item", cascade="all, delete-orphan"
+        back_populates="item",
+        cascade="all, delete-orphan",
+        foreign_keys="PriceComp.item_id",
     )
 
 
@@ -91,4 +107,4 @@ class PriceComp(Base):
     price: Mapped[float | None] = mapped_column(Float, nullable=True)
     currency: Mapped[str] = mapped_column(String(10), default="USD")
 
-    item: Mapped["Item"] = relationship(back_populates="comps")
+    item: Mapped["Item"] = relationship(back_populates="comps", foreign_keys=[item_id])

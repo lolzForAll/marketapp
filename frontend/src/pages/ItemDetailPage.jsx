@@ -17,6 +17,7 @@ export default function ItemDetailPage() {
   const [form, setForm] = useState(null);
   const [error, setError] = useState(null);
   const [busy, setBusy] = useState(null); // which action is in flight
+  const [nextPhotoIndex, setNextPhotoIndex] = useState(0);
   const photoInputRef = useRef(null);
 
   const load = () =>
@@ -29,6 +30,7 @@ export default function ItemDetailPage() {
           description: i.description,
           category: i.category,
           condition: i.condition,
+          dimensions: i.dimensions,
           price_final: i.price_final ?? "",
           notes: i.notes,
         });
@@ -49,8 +51,10 @@ export default function ItemDetailPage() {
     try {
       const updated = await fn();
       setItem(updated);
+      return updated;
     } catch (e) {
       setError(e.message);
+      throw e;
     } finally {
       setBusy(null);
     }
@@ -63,6 +67,7 @@ export default function ItemDetailPage() {
         description: form.description,
         category: form.category,
         condition: form.condition,
+        dimensions: form.dimensions,
         price_final: form.price_final === "" ? null : Number(form.price_final),
         notes: form.notes,
       })
@@ -79,6 +84,39 @@ export default function ItemDetailPage() {
     await api.deleteItem(id);
     navigate("/");
   };
+
+  const runSearch = () =>
+    run("analyze", () => api.analyzeItem(id, 0)).then(() => setNextPhotoIndex(1));
+
+  const tryAnotherPhoto = () =>
+    run("analyze", () => api.analyzeItem(id, nextPhotoIndex)).then(() =>
+      setNextPhotoIndex((n) => n + 1)
+    );
+
+  const pickComp = (compId) => run("match", () => api.selectMatch(id, { comp_id: compId }));
+  const skipToManual = () => run("match", () => api.selectMatch(id, { skip: true }));
+  const changeMatch = () => run("match", () => api.selectMatch(id, { reset: true }));
+
+  const generateListing = () =>
+    run("generate", async () => {
+      await api.updateItem(id, {
+        title: form.title,
+        condition: form.condition,
+        dimensions: form.dimensions,
+        notes: form.notes,
+      });
+      return api.generateListing(id);
+    }).then((updated) => {
+      setForm((f) => ({
+        ...f,
+        title: updated.title,
+        description: updated.description,
+        category: updated.category,
+        price_final: updated.price_final ?? "",
+      }));
+    });
+
+  const hasMorePhotosToTry = nextPhotoIndex < item.photos.length;
 
   return (
     <div>
@@ -108,6 +146,135 @@ export default function ItemDetailPage() {
       <span className={`badge ${item.status}`}>{item.status}</span>
 
       <div className="card" style={{ marginTop: 16 }}>
+        <h3 style={{ marginTop: 0 }}>1. Find the matching product</h3>
+        <p className="help-text">
+          Reverse image search (SerpApi / Google Lens) on your photos. Requires
+          SERPAPI_API_KEY and PUBLIC_BASE_URL configured on the backend — see the
+          README.
+        </p>
+
+        {item.match_status === "unmatched" && item.comps.length === 0 && (
+          <button className="secondary" onClick={runSearch} disabled={busy === "analyze"}>
+            {busy === "analyze" ? "Searching..." : "Run price search"}
+          </button>
+        )}
+
+        {item.match_status === "unmatched" && item.comps.length > 0 && (
+          <>
+            <div className="help-text" style={{ marginTop: 4 }}>
+              Which of these is actually your item?
+            </div>
+            <ul className="comp-list">
+              {item.comps.map((c) => (
+                <li key={c.id}>
+                  <a href={c.source_link} target="_blank" rel="noreferrer">
+                    {c.source_title}
+                  </a>
+                  <span>{c.price != null ? `$${c.price}` : "-"}</span>
+                  <button
+                    className="secondary"
+                    onClick={() => pickComp(c.id)}
+                    disabled={busy === "match"}
+                    style={{ marginLeft: 8 }}
+                  >
+                    Use this
+                  </button>
+                </li>
+              ))}
+            </ul>
+            <div className="btn-row">
+              <button
+                className="secondary"
+                onClick={tryAnotherPhoto}
+                disabled={busy === "analyze" || !hasMorePhotosToTry}
+                title={!hasMorePhotosToTry ? "No more photos to try" : ""}
+              >
+                None of these match — try another photo
+              </button>
+              <button className="secondary" onClick={skipToManual} disabled={busy === "match"}>
+                Not in search options — I'll enter it manually
+              </button>
+            </div>
+          </>
+        )}
+
+        {item.match_status === "matched" && (
+          <div className="banner info">
+            Matched to:{" "}
+            <strong>
+              {item.comps.find((c) => c.id === item.selected_comp_id)?.source_title ??
+                "(selected product)"}
+            </strong>
+            <div className="btn-row">
+              <button className="secondary" onClick={changeMatch} disabled={busy === "match"}>
+                Change match
+              </button>
+            </div>
+          </div>
+        )}
+
+        {item.match_status === "manual" && (
+          <div className="banner info">
+            Entering this item manually — using the Title field below as the reference.
+            <div className="btn-row">
+              <button className="secondary" onClick={changeMatch} disabled={busy === "match"}>
+                Search instead
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="card" style={{ marginTop: 16 }}>
+        <h3 style={{ marginTop: 0 }}>2. Condition &amp; dimensions</h3>
+        <div className="form-row">
+          <label htmlFor="item_condition">Condition</label>
+          <select
+            id="item_condition"
+            value={form.condition}
+            onChange={(e) => setForm({ ...form, condition: e.target.value })}
+          >
+            {CONDITIONS.map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="form-row">
+          <label htmlFor="item_dimensions">
+            Dimensions <span className="help-text">(optional — only if not on the matched product page)</span>
+          </label>
+          <input
+            id="item_dimensions"
+            placeholder='e.g. 30in W x 32in H x 28in D'
+            value={form.dimensions}
+            onChange={(e) => setForm({ ...form, dimensions: e.target.value })}
+          />
+        </div>
+        <div className="form-row">
+          <label htmlFor="item_notes">Private notes (not shown in listing)</label>
+          <textarea
+            id="item_notes"
+            value={form.notes}
+            onChange={(e) => setForm({ ...form, notes: e.target.value })}
+          />
+        </div>
+        <div className="btn-row">
+          <button
+            onClick={generateListing}
+            disabled={item.match_status === "unmatched" || busy === "generate"}
+          >
+            {busy === "generate" ? "Writing listing..." : "3. Generate listing & price"}
+          </button>
+          {item.match_status === "unmatched" && (
+            <span className="help-text">Pick a match (or go manual) above first.</span>
+          )}
+        </div>
+      </div>
+
+      <div className="card" style={{ marginTop: 16 }}>
+        <h3 style={{ marginTop: 0 }}>4. Review &amp; edit</h3>
         <div className="form-row">
           <label htmlFor="item_title">Title</label>
           <input
@@ -125,20 +292,6 @@ export default function ItemDetailPage() {
           />
         </div>
         <div className="form-row">
-          <label htmlFor="item_condition">Condition</label>
-          <select
-            id="item_condition"
-            value={form.condition}
-            onChange={(e) => setForm({ ...form, condition: e.target.value })}
-          >
-            {CONDITIONS.map(([value, label]) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="form-row">
           <label htmlFor="item_description">Description</label>
           <textarea
             id="item_description"
@@ -147,18 +300,10 @@ export default function ItemDetailPage() {
           />
         </div>
         <div className="form-row">
-          <label htmlFor="item_notes">Private notes (not shown in listing)</label>
-          <textarea
-            id="item_notes"
-            value={form.notes}
-            onChange={(e) => setForm({ ...form, notes: e.target.value })}
-          />
-        </div>
-        <div className="form-row">
           <label htmlFor="item_price">
             Final asking price{" "}
             {item.price_suggested != null && (
-              <span className="help-text">(suggested: ${item.price_suggested})</span>
+              <span className="help-text">(AI suggested: ${item.price_suggested})</span>
             )}
           </label>
           <input
@@ -168,6 +313,9 @@ export default function ItemDetailPage() {
             value={form.price_final}
             onChange={(e) => setForm({ ...form, price_final: e.target.value })}
           />
+          {item.ai_price_reasoning && (
+            <div className="help-text">AI reasoning: {item.ai_price_reasoning}</div>
+          )}
         </div>
         <div className="btn-row">
           <button onClick={saveEdits} disabled={busy === "save"}>
@@ -177,40 +325,6 @@ export default function ItemDetailPage() {
             Delete item
           </button>
         </div>
-      </div>
-
-      <div className="card" style={{ marginTop: 16 }}>
-        <h3 style={{ marginTop: 0 }}>Pricing research</h3>
-        <p className="help-text">
-          Runs a reverse image search (SerpApi / Google Lens) on the first photo and
-          suggests a price from comparable listings. Requires SERPAPI_API_KEY and
-          PUBLIC_BASE_URL to be configured on the backend — see the README.
-        </p>
-        <button
-          className="secondary"
-          onClick={() => run("analyze", () => api.analyzeItem(id))}
-          disabled={busy === "analyze"}
-        >
-          {busy === "analyze" ? "Searching..." : "Run price search"}
-        </button>
-
-        {item.comps.length > 0 && (
-          <>
-            <div className="help-text" style={{ marginTop: 12 }}>
-              Comparable listings found (review before trusting the suggested price):
-            </div>
-            <ul className="comp-list">
-              {item.comps.map((c) => (
-                <li key={c.id}>
-                  <a href={c.source_link} target="_blank" rel="noreferrer">
-                    {c.source_title}
-                  </a>
-                  <span>{c.price != null ? `$${c.price}` : "-"}</span>
-                </li>
-              ))}
-            </ul>
-          </>
-        )}
       </div>
 
       <div className="card" style={{ marginTop: 16 }}>
