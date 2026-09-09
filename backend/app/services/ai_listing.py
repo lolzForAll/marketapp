@@ -10,17 +10,23 @@ either a reference product (a similar item found via reverse image search, \
 with its typical/listed price) or no reference at all, plus the seller's own \
 condition, dimensions, and notes for THIS specific physical item.
 
-The reference product is only a rough starting point for what kind of item \
-this is and a loose price anchor - it may be the wrong size, variant, \
-material, or model, since it came from an automated image match, not a \
-manual check. The seller's own dimensions and notes describe the actual \
-item in hand and ALWAYS take priority: if they conflict with anything the \
-reference product implies (a different size, a mismatched feature, a \
-material called out in the notes, etc.), trust the seller's dimensions and \
-notes and adjust the title/description/price accordingly - do not just \
-restate the reference product's specs. If the reference and the seller's \
-own details clearly describe different items, favor the seller's details \
-and treat the reference price as a weak, low-confidence anchor.
+The reference product comes in one of two trust levels, stated below it:
+- CONFIRMED MATCH: a person looked at the image-search results and manually \
+picked this exact product as correctly identifying the item. Its name, \
+brand, and model ARE trustworthy - use them prominently and specifically in \
+the title and description (e.g. the real brand/model name, not a vague \
+paraphrase). Only its other specifics - exact color/finish/variant, price, \
+implied condition - may not match this particular used unit, so defer to \
+the seller's own dimensions/notes wherever those conflict with it.
+- UNCONFIRMED / NO MATCH: no person verified this reference (it's either \
+absent, or just whatever loose label the seller typed in). Treat it as a \
+weak, low-confidence guess for everything, including the product identity \
+itself.
+
+Either way, the seller's own dimensions and notes describe the actual item \
+in hand and ALWAYS take priority over anything the reference implies when \
+they conflict - adjust the title/description/price accordingly rather than \
+just restating the reference's specs.
 
 Pull out and mention concrete, buyer-relevant attributes whenever they're \
 available: material, color/finish, brand, model, capacity/size, and any \
@@ -74,6 +80,7 @@ def generate_listing(
     reference_title: str | None,
     reference_price: float | None,
     reference_currency: str | None,
+    reference_confirmed: bool = False,
     category: str,
     condition: str,
     dimensions: str,
@@ -88,7 +95,8 @@ def generate_listing(
         )
 
     if reference_title:
-        reference_line = f"Reference product (rough anchor only, may not exactly match): {reference_title}"
+        trust_label = "CONFIRMED MATCH" if reference_confirmed else "UNCONFIRMED / NO MATCH"
+        reference_line = f"Reference product ({trust_label}): {reference_title}"
         if reference_price:
             reference_line += f" (typically around {reference_price} {reference_currency or 'USD'} new/listed)"
     else:
@@ -107,7 +115,7 @@ def generate_listing(
             f"Pickup area: {neighborhood}" if neighborhood else "Pickup area: not specified",
             f"Pickup notes: {pickup_notes}" if pickup_notes else "Pickup notes: none",
             "",
-            "--- Reference product from image search (secondary, may be inexact) ---",
+            "--- Reference product from image search ---",
             reference_line,
         ]
     )

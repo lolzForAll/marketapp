@@ -123,14 +123,17 @@ def generate_listing_endpoint(item_id: int, request: Request, db: Session = Depe
     reference_title = None
     reference_price = None
     reference_currency = None
+    reference_confirmed = False
     if item.match_status == models.MATCH_MATCHED:
         comp = db.get(models.PriceComp, item.selected_comp_id)
         if comp:
             reference_title = comp.source_title
             reference_price = comp.price
             reference_currency = comp.currency
+            reference_confirmed = True
     if not reference_title:
         reference_title = item.title or None
+        reference_confirmed = False
 
     seller = db.get(models.SellerProfile, 1)
     neighborhood = seller.neighborhood if seller else ""
@@ -141,6 +144,7 @@ def generate_listing_endpoint(item_id: int, request: Request, db: Session = Depe
             reference_title=reference_title,
             reference_price=reference_price,
             reference_currency=reference_currency,
+            reference_confirmed=reference_confirmed,
             category=item.category,
             condition=item.condition,
             dimensions=item.dimensions,
