@@ -39,6 +39,12 @@ low end just because the item is used, especially for higher-value items. \
 If no reference price is available, use the category/condition/notes to \
 give your best rough estimate and say so plainly in your reasoning.
 
+This is a pickup-only listing: the buyer is responsible for collecting the \
+item themselves. Always state this plainly in the description (e.g. "buyer \
+must pick up" / "local pickup only"), and mention the pickup area given \
+below. Never say or imply that the seller will deliver, ship, or drop off \
+the item.
+
 Respond with ONLY a JSON object with these exact keys:
 - "title": short listing title (no price or emojis)
 - "description": 2-4 sentences, plain text, no markdown
@@ -62,6 +68,7 @@ def generate_listing(
     dimensions: str,
     notes: str,
     neighborhood: str,
+    pickup_notes: str = "",
 ) -> dict:
     if not OPENAI_API_KEY:
         raise AIListingError(
@@ -87,6 +94,7 @@ def generate_listing(
             f"Seller notes: {notes}" if notes else "Seller notes: none",
             f"Category hint: {category}" if category else "Category hint: none",
             f"Pickup area: {neighborhood}" if neighborhood else "Pickup area: not specified",
+            f"Pickup notes: {pickup_notes}" if pickup_notes else "Pickup notes: none",
             "",
             "--- Reference product from image search (secondary, may be inexact) ---",
             reference_line,

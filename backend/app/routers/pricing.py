@@ -134,6 +134,7 @@ def generate_listing_endpoint(item_id: int, request: Request, db: Session = Depe
 
     seller = db.get(models.SellerProfile, 1)
     neighborhood = seller.neighborhood if seller else ""
+    pickup_notes = seller.pickup_notes if seller else ""
 
     try:
         result = generate_listing(
@@ -145,6 +146,7 @@ def generate_listing_endpoint(item_id: int, request: Request, db: Session = Depe
             dimensions=item.dimensions,
             notes=item.notes,
             neighborhood=neighborhood,
+            pickup_notes=pickup_notes,
         )
     except AIListingError as exc:
         raise HTTPException(502, str(exc)) from exc
