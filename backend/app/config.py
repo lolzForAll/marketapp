@@ -21,9 +21,13 @@ OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
 # reverse image search. Example: https://abcd1234.ngrok-free.app
 PUBLIC_BASE_URL = os.getenv("PUBLIC_BASE_URL", "").rstrip("/")
 
-# Where Playwright keeps the persistent browser profile (cookies/session) used
-# for the Facebook publish-assist feature, so you only have to log into
-# Facebook manually once. Never stores your Facebook password.
-BROWSER_PROFILE_DIR = os.getenv(
-    "BROWSER_PROFILE_DIR", str(BASE_DIR.parent / ".browser_profile")
+# Where the Facebook publish-assist feature saves your logged-in session
+# (cookies only, via Playwright's storage_state) so you only have to log into
+# Facebook manually once. Never stores your Facebook password. Kept as a
+# reusable auth snapshot rather than one shared persistent browser profile,
+# so multiple publish-assist windows can be open at the same time - Chromium
+# only allows one live process per persistent profile directory, which is
+# why using a single shared profile broke the second concurrent window.
+FACEBOOK_AUTH_STATE_PATH = os.getenv(
+    "FACEBOOK_AUTH_STATE_PATH", str(BASE_DIR.parent / ".facebook_auth_state.json")
 )

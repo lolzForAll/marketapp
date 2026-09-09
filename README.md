@@ -49,9 +49,13 @@ challenged, or restricted, **even though a human always does the final
 Publish click**. That's why this project:
 
 - Never stores or handles your Facebook password. You log in by hand, once,
-  in the real browser window the tool opens; a local Playwright browser
-  profile (`backend/.browser_profile/`, git-ignored) remembers that login
-  for next time, the same way a normal Chrome profile would.
+  in the real browser window the tool opens; your login session is then
+  saved to `backend/.facebook_auth_state.json` (git-ignored, cookies only)
+  and reused on future runs. Each publish-assist window is its own
+  independent browser seeded from that saved login, rather than one shared
+  browser profile — Chromium only allows a single live process per shared
+  profile, so this is what lets you have more than one item's window open
+  at once.
 - Never clicks "Publish"/"List item" for you — always leaves that to you.
 - Fills in whatever fields it can find and clearly logs (in the terminal)
   which fields it could/couldn't fill, since Facebook changes Marketplace's

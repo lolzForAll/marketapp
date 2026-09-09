@@ -8,7 +8,7 @@ venv/
 backend/app/static/uploads/*
 !backend/app/static/uploads/.gitkeep
 backend/marketapp.db
-backend/.browser_profile/
+backend/.facebook_auth_state.json
 
 # frontend
 frontend/node_modules/

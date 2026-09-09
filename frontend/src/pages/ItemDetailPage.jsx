@@ -334,15 +334,19 @@ export default function ItemDetailPage() {
           {item.status !== "approved" && (
             <span className="help-text">Set a final price and approve the item first.</span>
           )}
-          {item.status === "draft" || item.status === "analyzed" ? (
+          {item.status !== "posted" && (
             <button
               className="secondary"
               onClick={() => run("approve", () => api.approveItem(id))}
               disabled={form.price_final === "" || busy === "approve"}
             >
-              {busy === "approve" ? "Approving..." : "Approve item"}
+              {busy === "approve"
+                ? "Approving..."
+                : item.status === "draft" || item.status === "analyzed"
+                  ? "Approve item"
+                  : "Re-approve with these changes"}
             </button>
-          ) : null}
+          )}
           {(item.status === "publish_started" || item.status === "approved") && (
             <button
               className="secondary"
