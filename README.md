@@ -16,7 +16,10 @@ yourself.
 3. **Run price search** — calls [SerpApi](https://serpapi.com)'s Google Lens
    reverse image search once per photo of the item and pools the results into
    one list (more photos means more SerpApi calls/cost per item, but a better
-   chance of finding the right match).
+   chance of finding the right match). Results seen across more of your
+   photos are sorted first, and a quick OpenAI call flags whichever one it
+   thinks is the most likely match with a one-line reason — a hint only, it
+   never picks for you.
 4. **Pick the match** — choose which (if any) of the pooled results is
    actually your item. If it's not the kind of thing a search will ever find
    (a generic used towel, say), skip straight to manual entry.
@@ -29,10 +32,11 @@ yourself.
    the final price, before approving.
 7. **Approve** — lock in the final price you're happy with.
 8. **Publish-assist** — opens a real, visible Chrome window on your machine
-   (using a persistent profile so you only log into Facebook once) and
-   pre-fills the Marketplace "create listing" form: photos, title, price,
-   description, location. **It never clicks Publish.** You review the
-   listing yourself in that window and publish it by hand.
+   (reusing your saved Facebook login so you only log in once, even across
+   multiple items' windows open at the same time) and pre-fills the
+   Marketplace "create listing" form: photos, title, price, description,
+   location. **It never clicks Publish.** You review the listing yourself in
+   that window and publish it by hand.
 9. Mark the item "posted" in the app once you've published it, so your item
    list stays an accurate to-do list of what's left.
 

@@ -7,7 +7,7 @@ from .. import models, schemas
 from ..config import PUBLIC_BASE_URL
 from ..database import get_db
 from ..services import pricing_engine
-from ..services.ai_listing import AIListingError, generate_listing
+from ..services.ai_listing import AIListingError, generate_listing, recommend_match
 from ..services.serpapi_client import SerpApiError, reverse_image_search
 from .items import _serialize
 
@@ -34,8 +34,7 @@ def analyze_item(item_id: int, request: Request, db: Session = Depends(get_db)):
     # Search every photo of the item and pool the results - a match might
     # only surface from one particular angle. Each photo is a separate
     # SerpApi call (and cost), so this runs once per "Run price search" click.
-    pooled: list[pricing_engine.Comp] = []
-    seen_links: set[str] = set()
+    per_photo_comps: list[list[pricing_engine.Comp]] = []
     last_error: SerpApiError | None = None
 
     for photo in item.photos:
@@ -45,22 +44,19 @@ def analyze_item(item_id: int, request: Request, db: Session = Depends(get_db)):
         except SerpApiError as exc:
             last_error = exc
             continue
-        for comp in pricing_engine.extract_comps(raw):
-            key = comp.link or comp.title
-            if key and key in seen_links:
-                continue
-            if key:
-                seen_links.add(key)
-            pooled.append(comp)
+        per_photo_comps.append(pricing_engine.extract_comps(raw))
+
+    pooled = pricing_engine.pool_comps(per_photo_comps)
 
     if not pooled and last_error is not None:
         raise HTTPException(502, str(last_error))
 
     # Replace any previous comps for this item, and since they're gone,
-    # any earlier match selection pointing at them is no longer valid.
+    # any earlier match selection/recommendation pointing at them is no
+    # longer valid.
     for comp in list(item.comps):
         db.delete(comp)
-    for comp in pooled:
+    for position, comp in enumerate(pooled):
         db.add(
             models.PriceComp(
                 item_id=item.id,
@@ -68,13 +64,44 @@ def analyze_item(item_id: int, request: Request, db: Session = Depends(get_db)):
                 source_link=comp.link,
                 price=comp.price,
                 currency=comp.currency,
+                photo_match_count=comp.photo_count,
+                position=position,
             )
         )
     item.match_status = models.MATCH_UNMATCHED
     item.selected_comp_id = None
+    item.recommended_comp_id = None
+    item.match_recommendation_reasoning = ""
 
     db.commit()
     db.refresh(item)
+
+    # Best-effort AI recommendation of which pooled comp is the likely match -
+    # a hint, not an auto-selection; the user still picks. Skipped silently if
+    # OPENAI_API_KEY isn't configured or the call fails for any reason, since
+    # the search results themselves are already useful without it.
+    if item.comps:
+        item_hint = " / ".join(filter(None, [item.title, item.category]))
+        try:
+            recommendation = recommend_match(
+                item_hint=item_hint,
+                comps=[
+                    {
+                        "id": c.id,
+                        "title": c.source_title,
+                        "price": c.price,
+                        "photo_count": c.photo_match_count,
+                    }
+                    for c in item.comps
+                ],
+            )
+        except Exception:
+            recommendation = {"recommended_id": None, "reasoning": ""}
+        if recommendation["recommended_id"] is not None:
+            item.recommended_comp_id = recommendation["recommended_id"]
+            item.match_recommendation_reasoning = recommendation["reasoning"]
+            db.commit()
+            db.refresh(item)
 
     return _serialize(item, request)
 

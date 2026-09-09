@@ -60,6 +60,10 @@ class Item(Base):
     selected_comp_id: Mapped[int | None] = mapped_column(
         ForeignKey("price_comps.id"), nullable=True
     )
+    recommended_comp_id: Mapped[int | None] = mapped_column(
+        ForeignKey("price_comps.id"), nullable=True
+    )
+    match_recommendation_reasoning: Mapped[str] = mapped_column(Text, default="")
 
     status: Mapped[str] = mapped_column(String(30), default=STATUS_DRAFT)
     notes: Mapped[str] = mapped_column(Text, default="")
@@ -81,6 +85,7 @@ class Item(Base):
         back_populates="item",
         cascade="all, delete-orphan",
         foreign_keys="PriceComp.item_id",
+        order_by="PriceComp.position",
     )
 
 
@@ -106,5 +111,10 @@ class PriceComp(Base):
     source_link: Mapped[str] = mapped_column(String(1000), default="")
     price: Mapped[float | None] = mapped_column(Float, nullable=True)
     currency: Mapped[str] = mapped_column(String(10), default="USD")
+    # How many of the item's distinct photos this same product was found
+    # from - a comp recognized from several angles is a much stronger match
+    # signal than one seen only once. Also sets display order (highest first).
+    photo_match_count: Mapped[int] = mapped_column(Integer, default=1)
+    position: Mapped[int] = mapped_column(Integer, default=0)
 
     item: Mapped["Item"] = relationship(back_populates="comps", foreign_keys=[item_id])

@@ -86,8 +86,63 @@ it. Never pad it with filler or invented specifics just to make it longer.
 """
 
 
+RECOMMEND_SYSTEM_PROMPT = """You help pick which product from a reverse-image-search \
+result list most likely matches a specific used item a person is selling, based on \
+whatever hint they've typed so far (title/category, which may be blank or generic) \
+and how many of their photos each result was recognized from - a higher count is a \
+much stronger signal it's a genuine match, since it was recognized from multiple \
+angles rather than a single coincidental resemblance.
+
+Respond with ONLY a JSON object: {"recommended_id": <id or null>, "reasoning": "<one \
+sentence>"}. Use null for recommended_id if nothing looks like a plausible match - \
+e.g. the candidates are all clearly different categories from each other and from \
+the hint, or seen_in_photos is 1 for everything with no other signal to go on. Don't \
+force a pick you're not reasonably confident in; a wrong recommendation is worse \
+than no recommendation.
+"""
+
+
 class AIListingError(RuntimeError):
     pass
+
+
+def recommend_match(*, item_hint: str, comps: list[dict]) -> dict:
+    """Best-effort: ask the model which pooled comp is most likely the real
+    match. Never raises, regardless of what's fed in - callers treat this as
+    an optional hint, not a required step, so any failure just means no
+    recommendation this time rather than breaking the search itself."""
+    try:
+        if not OPENAI_API_KEY or not comps:
+            return {"recommended_id": None, "reasoning": ""}
+
+        lines = [f"Item hint so far: {item_hint or 'none typed yet'}", "", "Candidates:"]
+        for c in comps:
+            price = f"${c['price']}" if c.get("price") is not None else "price unknown"
+            lines.append(
+                f'- id={c["id"]}: "{c["title"]}" ({price}), seen_in_photos={c["photo_count"]}'
+            )
+        user_prompt = "\n".join(lines)
+
+        client = OpenAI(api_key=OPENAI_API_KEY)
+        response = client.chat.completions.create(
+            model=OPENAI_MODEL,
+            response_format={"type": "json_object"},
+            messages=[
+                {"role": "system", "content": RECOMMEND_SYSTEM_PROMPT},
+                {"role": "user", "content": user_prompt},
+            ],
+        )
+        data = json.loads(response.choices[0].message.content)
+        recommended_id = data.get("recommended_id")
+        valid_ids = {c["id"] for c in comps}
+        if recommended_id not in valid_ids:
+            recommended_id = None
+        return {
+            "recommended_id": recommended_id,
+            "reasoning": str(data.get("reasoning", "")).strip() if recommended_id else "",
+        }
+    except Exception:
+        return {"recommended_id": None, "reasoning": ""}
 
 
 def generate_listing(

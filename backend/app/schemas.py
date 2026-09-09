@@ -34,6 +34,7 @@ class PriceCompOut(BaseModel):
     source_link: str
     price: float | None
     currency: str
+    photo_match_count: int
 
 
 class ItemOut(BaseModel):
@@ -49,6 +50,8 @@ class ItemOut(BaseModel):
     ai_price_reasoning: str
     match_status: str
     selected_comp_id: int | None
+    recommended_comp_id: int | None
+    match_recommendation_reasoning: str
     status: str
     notes: str
     created_at: datetime.datetime

@@ -155,23 +155,38 @@ export default function ItemDetailPage() {
         {item.match_status === "unmatched" && item.comps.length > 0 && (
           <>
             <div className="help-text" style={{ marginTop: 4 }}>
-              Which of these is actually your item?
+              Which of these is actually your item? Results seen across more of your
+              photos are sorted first and are usually the better match.
             </div>
+            {item.match_recommendation_reasoning && (
+              <div className="banner info" style={{ marginTop: 8 }}>
+                ★ AI recommendation: {item.match_recommendation_reasoning}
+              </div>
+            )}
             <ul className="comp-list">
               {item.comps.map((c) => (
                 <li key={c.id}>
                   <a href={c.source_link} target="_blank" rel="noreferrer">
                     {c.source_title}
                   </a>
-                  <span>{c.price != null ? `$${c.price}` : "-"}</span>
-                  <button
-                    className="secondary"
-                    onClick={() => pickComp(c.id)}
-                    disabled={busy === "match"}
-                    style={{ marginLeft: 8 }}
-                  >
-                    Use this
-                  </button>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+                    {c.id === item.recommended_comp_id && (
+                      <span className="badge approved">★ Recommended</span>
+                    )}
+                    {item.photos.length > 1 && (
+                      <span className="help-text">
+                        seen in {c.photo_match_count}/{item.photos.length} photos
+                      </span>
+                    )}
+                    <span>{c.price != null ? `$${c.price}` : "-"}</span>
+                    <button
+                      className="secondary"
+                      onClick={() => pickComp(c.id)}
+                      disabled={busy === "match"}
+                    >
+                      Use this
+                    </button>
+                  </div>
                 </li>
               ))}
             </ul>
