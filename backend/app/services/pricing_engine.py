@@ -7,6 +7,7 @@ class Comp:
     link: str
     price: float | None
     currency: str
+    thumbnail: str = ""
     photo_count: int = 1
 
 
@@ -20,6 +21,9 @@ def extract_comps(raw_serpapi_response: dict) -> list[Comp]:
                 link=match.get("link", ""),
                 price=price_info.get("extracted_value"),
                 currency=price_info.get("currency", "USD"),
+                # SerpApi's documented field for this is "thumbnail"; "image"
+                # is a defensive fallback in case that ever differs.
+                thumbnail=match.get("thumbnail") or match.get("image") or "",
             )
         )
     return comps
@@ -44,7 +48,9 @@ def pool_comps(per_photo_comps: list[list[Comp]]) -> list[Comp]:
             if key in pooled:
                 pooled[key].photo_count += 1
             else:
-                pooled[key] = Comp(comp.title, comp.link, comp.price, comp.currency)
+                pooled[key] = Comp(
+                    comp.title, comp.link, comp.price, comp.currency, comp.thumbnail
+                )
                 order.append(key)
 
     result = [pooled[key] for key in order]

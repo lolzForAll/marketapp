@@ -263,6 +263,19 @@ button:disabled {
   white-space: nowrap;
 }
 
+.comp-thumb {
+  width: 40px;
+  height: 40px;
+  border-radius: 6px;
+  object-fit: cover;
+  background: #eee;
+  flex-shrink: 0;
+}
+
+.comp-thumb-empty {
+  border: 1px solid var(--border);
+}
+
 .dropzone {
   border: 2px dashed var(--border);
   border-radius: 12px;

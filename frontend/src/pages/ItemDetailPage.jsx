@@ -30,6 +30,7 @@ export default function ItemDetailPage() {
           category: i.category,
           condition: i.condition,
           dimensions: i.dimensions,
+          keywords: i.keywords,
           price_final: i.price_final ?? "",
           notes: i.notes,
         });
@@ -84,7 +85,11 @@ export default function ItemDetailPage() {
     navigate("/");
   };
 
-  const runSearch = () => run("analyze", () => api.analyzeItem(id));
+  const runSearch = () =>
+    run("analyze", async () => {
+      await api.updateItem(id, { keywords: form.keywords });
+      return api.analyzeItem(id);
+    });
 
   const pickComp = (compId) => run("match", () => api.selectMatch(id, { comp_id: compId }));
   const skipToManual = () => run("match", () => api.selectMatch(id, { skip: true }));
@@ -146,6 +151,27 @@ export default function ItemDetailPage() {
           — see the README.
         </p>
 
+        {item.match_status === "unmatched" && (
+          <div className="form-row">
+            <label htmlFor="item_keywords">
+              Keywords{" "}
+              <span className="help-text">
+                (optional — brand, model, or name, if you already know it)
+              </span>
+            </label>
+            <input
+              id="item_keywords"
+              placeholder="e.g. Herman Miller Aeron, size B"
+              value={form.keywords}
+              onChange={(e) => setForm({ ...form, keywords: e.target.value })}
+            />
+            <div className="help-text">
+              Can't change what the image search finds, but helps the AI pick the
+              right result out of the list and gets used in the final listing.
+            </div>
+          </div>
+        )}
+
         {item.match_status === "unmatched" && item.comps.length === 0 && (
           <button className="secondary" onClick={runSearch} disabled={busy === "analyze"}>
             {busy === "analyze" ? "Searching..." : "Run price search"}
@@ -166,9 +192,18 @@ export default function ItemDetailPage() {
             <ul className="comp-list">
               {item.comps.map((c) => (
                 <li key={c.id}>
-                  <a href={c.source_link} target="_blank" rel="noreferrer">
-                    {c.source_title}
-                  </a>
+                  <div
+                    style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0, flex: 1 }}
+                  >
+                    {c.thumbnail_url ? (
+                      <img src={c.thumbnail_url} alt="" className="comp-thumb" />
+                    ) : (
+                      <div className="comp-thumb comp-thumb-empty" />
+                    )}
+                    <a href={c.source_link} target="_blank" rel="noreferrer">
+                      {c.source_title}
+                    </a>
+                  </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
                     {c.id === item.recommended_comp_id && (
                       <span className="badge approved">★ Recommended</span>

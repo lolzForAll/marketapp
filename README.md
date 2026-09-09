@@ -13,31 +13,36 @@ yourself.
    reference (e.g. arranging pickups); it is never sent to Facebook or shown
    in a listing.
 2. **Upload photos** — drop in one or more photos of an item to create it.
-3. **Run price search** — calls [SerpApi](https://serpapi.com)'s Google Lens
+3. **(optional) Keywords** — type in a brand, model, or name if you already
+   know it. This can't change what the reverse image search itself finds
+   (it's image-only, no text query), but it sharpens the AI recommendation
+   below and gets folded into the final listing.
+4. **Run price search** — calls [SerpApi](https://serpapi.com)'s Google Lens
    reverse image search once per photo of the item and pools the results into
    one list (more photos means more SerpApi calls/cost per item, but a better
-   chance of finding the right match). Results seen across more of your
-   photos are sorted first, and a quick OpenAI call flags whichever one it
-   thinks is the most likely match with a one-line reason — a hint only, it
-   never picks for you.
-4. **Pick the match** — choose which (if any) of the pooled results is
+   chance of finding the right match), each with a small thumbnail so the
+   list is easy to scan. Results seen across more of your photos are sorted
+   first, and a quick OpenAI call flags whichever one it thinks is the most
+   likely match (weighing your keywords too) with a one-line reason — a hint
+   only, it never picks for you.
+5. **Pick the match** — choose which (if any) of the pooled results is
    actually your item. If it's not the kind of thing a search will ever find
    (a generic used towel, say), skip straight to manual entry.
-5. **Condition &amp; dimensions** — set the item's condition, and optionally
+6. **Condition &amp; dimensions** — set the item's condition, and optionally
    type in dimensions if they're not already on the matched product's page.
-6. **Generate listing &amp; price** — one call to OpenAI (`gpt-4o-mini` by
+7. **Generate listing &amp; price** — one call to OpenAI (`gpt-4o-mini` by
    default) writes the title/description and proposes a price, reasoning
    from the matched product's price (or your own notes, in the manual path)
    discounted for condition. You can edit anything it produces, including
    the final price, before approving.
-7. **Approve** — lock in the final price you're happy with.
-8. **Publish-assist** — opens a real, visible Chrome window on your machine
+8. **Approve** — lock in the final price you're happy with.
+9. **Publish-assist** — opens a real, visible Chrome window on your machine
    (reusing your saved Facebook login so you only log in once, even across
    multiple items' windows open at the same time) and pre-fills the
    Marketplace "create listing" form: photos, title, price, description,
    location. **It never clicks Publish.** You review the listing yourself in
    that window and publish it by hand.
-9. Mark the item "posted" in the app once you've published it, so your item
+10. Mark the item "posted" in the app once you've published it, so your item
    list stays an accurate to-do list of what's left.
 
 Needs both `SERPAPI_API_KEY` (image search) and `OPENAI_API_KEY` (listing
@@ -221,3 +226,8 @@ when you're not actively using this on a network you don't fully trust.
   hit a database error after pulling changes, delete `backend/marketapp.db`
   and let it get recreated (you'll lose existing items/seller profile, so
   re-enter your seller profile once after).
+- Comp thumbnails are read from SerpApi's `thumbnail` field (with `image` as
+  a fallback). If thumbnails show up blank once you're using a real
+  SERPAPI_API_KEY, the field name may differ from what's implemented in
+  `backend/app/services/pricing_engine.py::extract_comps` - a one-line fix
+  once you know the actual key from a real response.

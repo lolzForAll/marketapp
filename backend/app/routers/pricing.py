@@ -66,6 +66,7 @@ def analyze_item(item_id: int, request: Request, db: Session = Depends(get_db)):
                 currency=comp.currency,
                 photo_match_count=comp.photo_count,
                 position=position,
+                thumbnail_url=comp.thumbnail,
             )
         )
     item.match_status = models.MATCH_UNMATCHED
@@ -81,7 +82,7 @@ def analyze_item(item_id: int, request: Request, db: Session = Depends(get_db)):
     # OPENAI_API_KEY isn't configured or the call fails for any reason, since
     # the search results themselves are already useful without it.
     if item.comps:
-        item_hint = " / ".join(filter(None, [item.title, item.category]))
+        item_hint = " / ".join(filter(None, [item.title, item.category, item.keywords]))
         try:
             recommendation = recommend_match(
                 item_hint=item_hint,
@@ -175,6 +176,7 @@ def generate_listing_endpoint(item_id: int, request: Request, db: Session = Depe
             category=item.category,
             condition=item.condition,
             dimensions=item.dimensions,
+            keywords=item.keywords,
             notes=item.notes,
             neighborhood=neighborhood,
             pickup_notes=pickup_notes,

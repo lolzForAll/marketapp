@@ -8,7 +8,8 @@ SYSTEM_PROMPT = """You help a person write a Facebook Marketplace listing for a 
 single used item they're selling locally, e.g. while moving. You are given \
 either a reference product (a similar item found via reverse image search, \
 with its typical/listed price) or no reference at all, plus the seller's own \
-condition, dimensions, and notes for THIS specific physical item.
+condition, dimensions, keywords (brand/model/name they already know), and \
+notes for THIS specific physical item.
 
 The reference product comes in one of two trust levels, stated below it:
 - CONFIRMED MATCH: a person looked at the image-search results and manually \
@@ -17,16 +18,16 @@ brand, and model ARE trustworthy - use them prominently and specifically in \
 the title and description (e.g. the real brand/model name, not a vague \
 paraphrase). Only its other specifics - exact color/finish/variant, price, \
 implied condition - may not match this particular used unit, so defer to \
-the seller's own dimensions/notes wherever those conflict with it.
+the seller's own dimensions/keywords/notes wherever those conflict with it.
 - UNCONFIRMED / NO MATCH: no person verified this reference (it's either \
 absent, or just whatever loose label the seller typed in). Treat it as a \
 weak, low-confidence guess for everything, including the product identity \
 itself.
 
-Either way, the seller's own dimensions and notes describe the actual item \
-in hand and ALWAYS take priority over anything the reference implies when \
-they conflict - adjust the title/description/price accordingly rather than \
-just restating the reference's specs.
+Either way, the seller's own dimensions, keywords, and notes describe the \
+actual item in hand and ALWAYS take priority over anything the reference \
+implies when they conflict - adjust the title/description/price accordingly \
+rather than just restating the reference's specs.
 
 Pull out and mention as many concrete, buyer-relevant attributes as you can \
 find: material, color/finish, original manufacturer/brand, model/model \
@@ -36,13 +37,13 @@ e.g. "by [designer/brand], a premium/high-end line" - buyers searching for \
 a specific brand will look for that word). These are exactly what buyers \
 scan listings for, and a vague description gets fewer responses than one \
 that says what the item actually looks, feels, and is made of. Look for \
-these in two places: the seller's own notes (always trust these first if \
-they mention an attribute) and the reference product's title/brand when \
-the notes don't already cover it. Include every relevant detail you can \
-support from the given information rather than trimming to a couple - more \
-concrete, accurate detail is always better than a shorter, vaguer listing. \
-Do not invent specifics (a serial number, an exact year, a warranty) that \
-aren't implied by anything given to you.
+these in three places, in this priority order: the seller's own keywords/ \
+notes (always trust these first if they mention an attribute), then the \
+reference product's title/brand when those don't already cover it. Include \
+every relevant detail you can support from the given information rather \
+than trimming to a couple - more concrete, accurate detail is always better \
+than a shorter, vaguer listing. Do not invent specifics (a serial number, an \
+exact year, a warranty) that aren't implied by anything given to you.
 
 Write an honest, concise marketplace listing: don't oversell or claim a \
 condition better than stated. Suggest a fair resale price for this specific \
@@ -88,10 +89,12 @@ it. Never pad it with filler or invented specifics just to make it longer.
 
 RECOMMEND_SYSTEM_PROMPT = """You help pick which product from a reverse-image-search \
 result list most likely matches a specific used item a person is selling, based on \
-whatever hint they've typed so far (title/category, which may be blank or generic) \
-and how many of their photos each result was recognized from - a higher count is a \
-much stronger signal it's a genuine match, since it was recognized from multiple \
-angles rather than a single coincidental resemblance.
+whatever hint they've typed so far (title/category/keywords such as brand, model, or \
+name - may be blank or generic) and how many of their photos each result was \
+recognized from - a higher count is a much stronger signal it's a genuine match, \
+since it was recognized from multiple angles rather than a single coincidental \
+resemblance. When keywords are given, a candidate whose title actually matches them \
+(the right brand/model name) is a strong signal even if its photo count is lower.
 
 Respond with ONLY a JSON object: {"recommended_id": <id or null>, "reasoning": "<one \
 sentence>"}. Use null for recommended_id if nothing looks like a plausible match - \
@@ -154,6 +157,7 @@ def generate_listing(
     category: str,
     condition: str,
     dimensions: str,
+    keywords: str = "",
     notes: str,
     neighborhood: str,
     pickup_notes: str = "",
@@ -180,6 +184,7 @@ def generate_listing(
             "--- Seller's own details for THIS item (authoritative) ---",
             f"Condition: {condition}",
             f"Dimensions: {dimensions}" if dimensions else "Dimensions: not provided",
+            f"Keywords (brand/model/name): {keywords}" if keywords else "Keywords: none",
             f"Seller notes: {notes}" if notes else "Seller notes: none",
             f"Category hint: {category}" if category else "Category hint: none",
             f"Pickup area: {neighborhood}" if neighborhood else "Pickup area: not specified",

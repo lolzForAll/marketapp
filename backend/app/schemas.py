@@ -35,6 +35,7 @@ class PriceCompOut(BaseModel):
     price: float | None
     currency: str
     photo_match_count: int
+    thumbnail_url: str
 
 
 class ItemOut(BaseModel):
@@ -45,6 +46,7 @@ class ItemOut(BaseModel):
     category: str
     condition: str
     dimensions: str
+    keywords: str
     price_suggested: float | None
     price_final: float | None
     ai_price_reasoning: str
@@ -69,6 +71,7 @@ class ItemUpdate(BaseModel):
     category: str | None = None
     condition: str | None = None
     dimensions: str | None = None
+    keywords: str | None = None
     price_final: float | None = None
     notes: str | None = None
 

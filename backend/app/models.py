@@ -51,6 +51,11 @@ class Item(Base):
     condition: Mapped[str] = mapped_column(String(50), default="good")
 
     dimensions: Mapped[str] = mapped_column(String(200), default="")
+    # Free-text hints the seller already knows (brand, model, name) that help
+    # the AI recommendation pick the right search result and get folded into
+    # the generated listing - not something the search itself can use, since
+    # the reverse image search is image-only with no text query.
+    keywords: Mapped[str] = mapped_column(String(300), default="")
 
     price_suggested: Mapped[float | None] = mapped_column(Float, nullable=True)
     price_final: Mapped[float | None] = mapped_column(Float, nullable=True)
@@ -116,5 +121,6 @@ class PriceComp(Base):
     # signal than one seen only once. Also sets display order (highest first).
     photo_match_count: Mapped[int] = mapped_column(Integer, default=1)
     position: Mapped[int] = mapped_column(Integer, default=0)
+    thumbnail_url: Mapped[str] = mapped_column(String(1000), default="")
 
     item: Mapped["Item"] = relationship(back_populates="comps", foreign_keys=[item_id])
