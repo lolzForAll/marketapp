@@ -67,8 +67,13 @@ python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 playwright install chromium   # only needed for the publish-assist feature
 cp .env.example .env          # then fill in SERPAPI_API_KEY and PUBLIC_BASE_URL
-uvicorn app.main:app --reload --port 8000
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
+
+`--host 0.0.0.0` makes the backend reachable from other devices on your
+network, not just this machine (see [Access from other devices on your
+WiFi](#access-from-other-devices-on-your-wifi) below). If you only ever plan
+to use the app from this machine, `--host 127.0.0.1` is more locked-down.
 
 `PUBLIC_BASE_URL` needs to be a URL that SerpApi's servers can reach to fetch
 your uploaded photo. For local development, run a tunnel in another
@@ -91,6 +96,40 @@ npm run dev
 
 Open the URL Vite prints (default `http://127.0.0.1:5173`). It proxies
 `/api` and `/uploads` to the backend on port 8000.
+
+## Access from other devices on your WiFi
+
+Both dev servers are configured to listen on all network interfaces
+(`--host 0.0.0.0` for the backend, `host: true` already set in
+`frontend/vite.config.js`), so once both are running you can open the app
+from your phone or another computer on the same network — handy for
+snapping a photo on your phone and uploading it straight into the app.
+
+1. Find the LAN IP of the machine running the app:
+   - macOS: `ipconfig getifaddr en0` (or `en1` if you're on Wi-Fi via a
+     different adapter)
+   - Linux: `hostname -I`
+   - Windows: `ipconfig` and look for the "IPv4 Address" under your Wi-Fi
+     adapter
+   - It'll look something like `192.168.1.42`.
+2. On the other device (connected to the **same** WiFi network), open
+   `http://<that-ip>:5173` — that's the whole frontend, working the same as
+   on `localhost`.
+3. Make sure both `uvicorn` (step above) and `npm run dev` are running with
+   the settings already in this repo — no extra flags needed for the
+   frontend, since `vite.config.js` already sets `host: true`.
+
+If it doesn't connect, your machine's firewall may be blocking incoming
+connections on ports `5173`/`8000` — allow them for your local network, or
+temporarily disable the firewall to confirm that's the issue.
+
+**Security note:** this makes the app reachable by *any* device on that
+WiFi network, with no login of any kind. That's normally fine on a home
+network you trust, but avoid doing this on a shared/public/office WiFi —
+anyone on it could read your contact info and item photos through the app,
+or use it to open the Facebook publish-assist browser on your machine. Stop
+both servers (or drop back to `--host 127.0.0.1` / remove `host: true`)
+when you're not actively using this on a network you don't fully trust.
 
 ## Notes
 

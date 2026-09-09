@@ -13,10 +13,6 @@ from .items import _serialize
 router = APIRouter(prefix="/api/items", tags=["pricing"])
 
 
-def _base_url(request: Request) -> str:
-    return PUBLIC_BASE_URL or str(request.base_url).rstrip("/")
-
-
 @router.post("/{item_id}/analyze", response_model=schemas.ItemOut)
 def analyze_item(item_id: int, request: Request, db: Session = Depends(get_db)):
     item = db.get(models.Item, item_id)

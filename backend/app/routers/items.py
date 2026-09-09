@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, Uplo
 from sqlalchemy.orm import Session, selectinload
 
 from .. import models, schemas
-from ..config import PUBLIC_BASE_URL, UPLOAD_DIR
+from ..config import UPLOAD_DIR
 from ..database import get_db
 
 router = APIRouter(prefix="/api/items", tags=["items"])
@@ -32,15 +32,13 @@ def _save_photo(item_id: int, upload: UploadFile, position: int) -> str:
     return filename
 
 
-def _base_url(request: Request) -> str:
-    return PUBLIC_BASE_URL or str(request.base_url).rstrip("/")
-
-
 def _serialize(item: models.Item, request: Request) -> schemas.ItemOut:
+    # A relative URL so it resolves against whatever host/IP the browser used
+    # to load the page (localhost, a LAN IP, a tunnel, ...) instead of being
+    # baked in from the server's own view of the request.
     out = schemas.ItemOut.model_validate(item)
-    base = _base_url(request)
     for photo, src in zip(out.photos, item.photos):
-        photo.url = f"{base}/uploads/{item.id}/{src.filename}"
+        photo.url = f"/uploads/{item.id}/{src.filename}"
     return out
 
 
